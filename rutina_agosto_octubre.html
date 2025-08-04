@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificador de Rutina Interactivo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals (Stone, Teal) -->
+    <!-- Application Structure Plan: A dashboard-style SPA with day-selector buttons controlling a central timeline view and an accompanying dynamic time-allocation chart. This structure transforms the static report into an interactive planner, allowing users to focus on one day at a time while still getting a high-level visual summary of their time commitments. This is more usable and engaging than a long, scrollable document. -->
+    <!-- Visualization & Content Choices: 1. Daily Schedule (Report Table) -> Goal: Organize/Inform -> Method: Interactive Timeline (HTML/JS) -> Interaction: Updated by day-selector buttons. Justification: Focuses user attention. 2. Time Allocation (Implied Data) -> Goal: Compare/Inform -> Method: Donut Chart (Chart.js/Canvas) -> Interaction: Updates with day selection. Justification: Provides instant visual insight into daily balance. 3. Key Recommendations (Report Text) -> Goal: Inform -> Method: Collapsible Cards (HTML/JS) -> Interaction: Click to expand. Justification: Keeps UI clean, provides details on demand. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        .day-btn.active {
+            background-color: #0d9488;
+            color: white;
+            font-weight: 600;
+        }
+        .day-btn {
+            transition: all 0.2s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-teal-700">Mi Planificador de Rutina</h1>
+            <p class="mt-2 text-lg text-stone-600">Una guía interactiva para equilibrar el estudio en el SENA y el bienestar personal.</p>
+        </header>
+
+        <main class="flex flex-col lg:flex-row gap-8">
+            
+            <aside class="lg:w-1/3 xl:w-1/4 flex flex-col gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-xl font-bold mb-4 text-teal-700">Selecciona el Día</h2>
+                    <div id="day-selector" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3">
+                        <button data-day="lunes" class="day-btn p-3 rounded-lg bg-stone-100 hover:bg-teal-100">Lunes</button>
+                        <button data-day="martes" class="day-btn p-3 rounded-lg bg-stone-100 hover:bg-teal-100">Martes</button>
+                        <button data-day="miercoles" class="day-btn p-3 rounded-lg bg-stone-100 hover:bg-teal-100">Miércoles</button>
+                        <button data-day="jueves" class="day-btn p-3 rounded-lg bg-stone-100 hover:bg-teal-100">Jueves</button>
+                        <button data-day="viernes" class="day-btn p-3 rounded-lg bg-stone-100 hover:bg-teal-100">Viernes</button>
+                        <button data-day="finde" class="day-btn p-3 rounded-lg bg-stone-100 hover:bg-teal-100">Fin de Semana</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-xl font-bold mb-4 text-teal-700">Distribución del Tiempo</h2>
+                    <p id="chart-intro" class="text-stone-600 mb-4 text-center">Así se distribuyen las 24 horas de tu día.</p>
+                    <div class="chart-container">
+                        <canvas id="time-chart"></canvas>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="lg:w-2/3 xl:w-3/4">
+                <div class="bg-white p-6 rounded-xl shadow-md min-h-full">
+                    <h2 id="schedule-title" class="text-2xl font-bold mb-6 text-center text-teal-700"></h2>
+                    <div id="schedule-container" class="space-y-4">
+                    </div>
+                </div>
+            </section>
+
+        </main>
+        
+        <footer class="mt-12">
+             <div class="bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-2xl font-bold mb-4 text-center text-teal-700">Recomendaciones Clave para el Éxito</h2>
+                <p class="text-center text-stone-600 mb-6">Estos principios son la base para que tu rutina funcione a largo plazo. Haz clic en cada uno para ver los detalles.</p>
+                <div id="recommendations-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        const scheduleData = {
+            lunes: {
+                title: "Lunes: Estableciendo el Ritmo (Remoto)",
+                schedule: [
+                    { time: '07:00 - 07:30', activity: 'Despertar y Preparación', icon: '☀️', notes: 'Hidratación, higiene personal.' },
+                    { time: '07:30 - 08:00', activity: 'Desayuno Nutritivo', icon: '🍳', notes: 'Comida equilibrada para empezar el día.' },
+                    { time: '08:00 - 09:30', activity: 'Ejercicio Físico', icon: '🏋️', notes: 'Sesión completa (gimnasio, carrera).' },
+                    { time: '09:30 - 10:00', activity: 'Preparación para Clases', icon: '💻', notes: 'Revisar material, configurar espacio.' },
+                    { time: '10:00 - 14:00', activity: 'Clases Universitarias (Remoto)', icon: '🎓', notes: 'Tomar notas activamente, participar.' },
+                    { time: '14:00 - 14:30', activity: 'Almuerzo', icon: '🥗', notes: 'Comida preparada o rápida.' },
+                    { time: '14:30 - 15:00', activity: 'Descanso Breve', icon: '🛋️', notes: 'Desconexión mental.' },
+                    { time: '15:00 - 17:00', activity: 'Estudio Autodidacta / Tareas', icon: '📚', notes: 'Enfocarse en tareas de alta prioridad.' },
+                    { time: '17:00 - 18:00', activity: 'Leer / Anime', icon: '🎬', notes: 'Tiempo de ocio para desconectar.' },
+                    { time: '18:00 - 19:00', activity: 'Preparación Cena / Cena', icon: '🍲', notes: 'Planificar la cena del martes si es posible.' },
+                    { time: '19:00 - 21:00', activity: 'Organización / Tiempo Libre', icon: '📋', notes: 'Organizar materiales, conectar con familia/amigos.' },
+                    { time: '21:00 - 22:00', activity: 'Rutina de Noche', icon: '🌙', notes: 'Evitar pantallas, lectura ligera.' },
+                    { time: '22:00', activity: 'Hora de Dormir', icon: '😴', notes: 'Asegurar 9 horas de sueño.' },
+                ],
+                timeDistribution: { 'Sueño': 9, 'Clases': 4, 'Estudio': 2, 'Ejercicio': 1.5, 'Comida': 1.5, 'Ocio/Libre': 3, 'Desplazamiento': 0 }
+            },
+            martes: {
+                title: "Martes: Jornada Extensa (Presencial)",
+                schedule: [
+                    { time: '07:00 - 07:30', activity: 'Despertar y Preparación', icon: '☀️', notes: 'Hidratación, higiene personal.' },
+                    { time: '07:30 - 08:00', activity: 'Desayuno Rápido', icon: '🍳', notes: 'Priorizar alimentos fáciles de consumir.' },
+                    { time: '08:00 - 10:00', activity: 'Desplazamiento al SENA', icon: '🚌', notes: 'Escuchar podcasts o revisar notas.' },
+                    { time: '10:00 - 18:00', activity: 'Clases Universitarias (Presencial)', icon: '🎓', notes: 'Tomar descansos breves para estirar.' },
+                    { time: '18:00 - 20:00', activity: 'Desplazamiento a Casa', icon: '🚌', notes: 'Descomprimir, escuchar música.' },
+                    { time: '20:00 - 20:30', activity: 'Cena Rápida / Pre-preparada', icon: '🍲', notes: 'Comida ligera y fácil de digerir.' },
+                    { time: '20:30 - 21:00', activity: 'Higiene Personal', icon: '🚿', notes: 'Rutina de noche esencial.' },
+                    { time: '21:00 - 21:30', activity: 'Tiempo de Desconexión', icon: '📖', notes: 'Lectura ligera o estiramientos suaves.' },
+                    { time: '21:30', activity: 'Hora de Dormir', icon: '😴', notes: 'Priorizar el sueño para recuperar energía (9.5h).' },
+                ],
+                timeDistribution: { 'Sueño': 9.5, 'Clases': 8, 'Estudio': 0, 'Ejercicio': 0, 'Comida': 1, 'Ocio/Libre': 0.5, 'Desplazamiento': 4 }
+            },
+            miercoles: {
+                title: "Miércoles: Impulso de Mitad de Semana (Presencial)",
+                schedule: [
+                    { time: '07:00 - 07:30', activity: 'Despertar y Preparación', icon: '☀️', notes: 'Hidratación, higiene personal.' },
+                    { time: '07:30 - 08:00', activity: 'Desayuno', icon: '🍳', notes: 'Comida equilibrada.' },
+                    { time: '08:00 - 10:00', activity: 'Desplazamiento al SENA', icon: '🚌', notes: 'Revisar temas del día, audiolibros.' },
+                    { time: '10:00 - 14:00', activity: 'Clases Universitarias (Presencial)', icon: '🎓', notes: 'Participar activamente.' },
+                    { time: '14:00 - 16:00', activity: 'Almuerzo y Desplazamiento a Casa', icon: '🚌', notes: 'Descomprimir, planificar la tarde.' },
+                    { time: '16:00 - 17:00', activity: 'Ejercicio Físico', icon: '🏃', notes: 'Sesión moderada para liberar estrés.' },
+                    { time: '17:00 - 18:30', activity: 'Estudio Autodidacta / Tareas', icon: '📚', notes: 'Enfocarse en tareas importantes.' },
+                    { time: '18:30 - 19:30', activity: 'Cena Temprana', icon: '🍲', notes: 'Preparar una cena ligera y nutritiva.' },
+                    { time: '19:30 - 20:30', activity: 'Desconexión / Lectura', icon: '📖', notes: 'Evitar pantallas, preparar todo para el jueves.' },
+                    { time: '20:30 - 21:00', activity: 'Rutina de Noche', icon: '🌙', notes: 'Higiene, preparación para el sueño.' },
+                    { time: '21:00', activity: 'Hora de Dormir (CRÍTICO)', icon: '😴', notes: 'Dormir temprano para el despertar del jueves (7h).' },
+                ],
+                timeDistribution: { 'Sueño': 7, 'Clases': 4, 'Estudio': 1.5, 'Ejercicio': 1, 'Comida': 1.5, 'Ocio/Libre': 1, 'Desplazamiento': 4 }
+            },
+            jueves: {
+                title: "Jueves: Dominando el Inicio Temprano (Presencial)",
+                schedule: [
+                    { time: '03:30 - 04:00', activity: 'Despertar Ultra-Eficiente', icon: '☀️', notes: 'Ropa y mochila listas desde la noche anterior.' },
+                    { time: '04:00 - 04:15', activity: 'Desayuno Rápido (para llevar)', icon: '🍌', notes: 'Opciones fáciles de consumir en el camino.' },
+                    { time: '04:15 - 06:00', activity: 'Desplazamiento al SENA', icon: '🚌', notes: 'Música relajante o descanso.' },
+                    { time: '06:00 - 14:00', activity: 'Clases Universitarias (Presencial)', icon: '🎓', notes: 'Mantenerse hidratado, pequeños descansos.' },
+                    { time: '14:00 - 16:00', activity: 'Almuerzo y Desplazamiento a Casa', icon: '🚌', notes: 'Desconexión total, siesta si es posible.' },
+                    { time: '16:00 - 16:30', activity: 'Siesta Corta (Opcional)', icon: '🛋️', notes: '20-30 min para combatir la deuda de sueño.' },
+                    { time: '16:30 - 17:30', activity: 'Ejercicio Ligero / Estiramientos', icon: '🧘', notes: 'Actividad suave para despertar el cuerpo.' },
+                    { time: '17:30 - 18:30', activity: 'Cena Temprana y Ligera', icon: '🍲', notes: 'Comida que no demande mucho esfuerzo.' },
+                    { time: '18:30 - 19:30', activity: 'Tiempo Libre / Anime / Lectura', icon: '🎬', notes: 'Relajación pura, evitar estudio intenso.' },
+                    { time: '19:30 - 20:00', activity: 'Rutina de Noche', icon: '🌙', notes: 'Higiene, preparación para el sueño.' },
+                    { time: '20:00', activity: 'Hora de Dormir (MUY TEMPRANO)', icon: '😴', notes: 'Priorizar el sueño para recuperar (7.5h).' },
+                ],
+                timeDistribution: { 'Sueño': 7.5, 'Clases': 8, 'Estudio': 0, 'Ejercicio': 1, 'Comida': 1.25, 'Ocio/Libre': 1.5, 'Desplazamiento': 3.75 }
+            },
+            viernes: {
+                title: "Viernes: Concluyendo la Semana (Presencial)",
+                schedule: [
+                    { time: '07:00 - 07:30', activity: 'Despertar y Preparación', icon: '☀️', notes: 'Hidratación, higiene personal.' },
+                    { time: '07:30 - 08:00', activity: 'Desayuno', icon: '🍳', notes: 'Comida equilibrada.' },
+                    { time: '08:00 - 10:00', activity: 'Desplazamiento al SENA', icon: '🚌', notes: 'Revisar notas de la semana.' },
+                    { time: '10:00 - 14:00', activity: 'Clases Universitarias (Presencial)', icon: '🎓', notes: 'Participar activamente.' },
+                    { time: '14:00 - 16:00', activity: 'Almuerzo y Desplazamiento a Casa', icon: '🚌', notes: 'Anticipación del fin de semana.' },
+                    { time: '16:00 - 17:00', activity: 'Ejercicio Físico', icon: '🏋️', notes: 'Sesión moderada o intensa.' },
+                    { time: '17:00 - 18:30', activity: 'Estudio Ligero / Organización', icon: '📚', notes: 'Revisar apuntes, organizar materiales.' },
+                    { time: '18:30 - 19:30', activity: 'Cena', icon: '🍲', notes: 'Disfrutar de una comida relajada.' },
+                    { time: '19:30 - 21:30', activity: 'Tiempo Libre / Anime / Social', icon: '🎮', notes: 'Disfrutar del ocio sin presiones.' },
+                    { time: '21:30 - 22:30', activity: 'Lectura / Relajación', icon: '📖', notes: 'Desconexión profunda.' },
+                    { time: '22:30', activity: 'Hora de Dormir', icon: '😴', notes: 'Prepararse para un sueño reparador (8.5h).' },
+                ],
+                timeDistribution: { 'Sueño': 8.5, 'Clases': 4, 'Estudio': 1.5, 'Ejercicio': 1, 'Comida': 1.5, 'Ocio/Libre': 3, 'Desplazamiento': 4 }
+            },
+            finde: {
+                title: "Fin de Semana: Recarga y Preparación",
+                schedule: [
+                    { time: 'Mañana', activity: 'Descanso y Actividad Física', icon: '🛌', notes: 'Ponerse al día con el sueño, sesión de ejercicio más larga.' },
+                    { time: 'Tarde', activity: 'Estudio Profundo y Ocio', icon: '📚', notes: 'Bloques largos para tareas complejas o proyectos. Ver anime, leer.' },
+                    { time: 'Domingo (Tarde/Noche)', activity: 'Preparación Semanal', icon: '📅', notes: 'Planificar comidas, organizar apuntes y preparar la mochila para el lunes.' },
+                    { time: 'Libre', activity: 'Socializar y Pasatiempos', icon: '👥', notes: 'Tiempo para amigos, familia e intereses personales.' },
+                ],
+                timeDistribution: { 'Sueño': 18, 'Estudio': 6, 'Ejercicio': 4, 'Comida': 4, 'Ocio/Libre': 12, 'Desplazamiento': 0, 'Organización': 4 }
+            }
+        };
+
+        const recommendationsData = [
+            { title: 'Prioriza el Sueño', icon: '😴', content: 'Es la base de tu energía y concentración. Intenta mantener horarios regulares, sobre todo la noche del miércoles. Una rutina de relajación antes de dormir sin pantallas es clave.' },
+            { title: 'Optimiza tu Desplazamiento', icon: '🚌', content: 'Transforma las 2 horas de viaje. Usa ese tiempo para escuchar podcasts académicos, audiolibros, revisar notas o simplemente para desconectar con música y recargar energías.' },
+            { title: 'Estudia Inteligentemente', icon: '🧠', content: 'Usa técnicas como Pomodoro (25 min de estudio, 5 de descanso). Divide las tareas grandes en partes pequeñas y aborda lo más difícil cuando tengas más energía.' },
+            { title: 'Planifica tus Comidas', icon: '🥗', content: 'El fin de semana, prepara almuerzos y componentes para cenas rápidas. Esto te salvará tiempo y energía, especialmente el martes al llegar tarde a casa.' },
+            { title: 'Integra tus Intereses', icon: '🎬', content: 'El ejercicio, leer o ver anime no son un lujo, son necesarios para tu salud mental. Incluso 15-30 minutos diarios marcan una gran diferencia para prevenir el agotamiento.' },
+            { title: 'Sé Flexible', icon: '🧘', content: 'Esta rutina es una guía, no una cárcel. Habrá días en que no puedas seguirla al pie de la letra. Adáptate, no te culpes y retoma el plan al día siguiente.' }
+        ];
+
+        const scheduleContainer = document.getElementById('schedule-container');
+        const scheduleTitle = document.getElementById('schedule-title');
+        const daySelector = document.getElementById('day-selector');
+        const chartIntro = document.getElementById('chart-intro');
+        const recommendationsContainer = document.getElementById('recommendations-container');
+        let timeChart;
+
+        function renderSchedule(day) {
+            const data = scheduleData[day];
+            scheduleTitle.textContent = data.title;
+            scheduleContainer.innerHTML = '';
+
+            if (day === 'finde') {
+                 chartIntro.textContent = 'Distribución promedio para Sábado y Domingo.';
+            } else {
+                 chartIntro.textContent = `Así se distribuyen las 24 horas de tu ${day}.`;
+            }
+
+            data.schedule.forEach(item => {
+                const card = `
+                    <div class="flex items-start space-x-4 p-4 bg-stone-50 rounded-lg border border-stone-200">
+                        <div class="text-2xl pt-1">${item.icon}</div>
+                        <div class="flex-1">
+                            <p class="font-bold text-teal-600">${item.activity}</p>
+                            <p class="text-sm text-stone-500 font-medium">${item.time}</p>
+                            <p class="text-sm text-stone-600 mt-1">${item.notes}</p>
+                        </div>
+                    </div>
+                `;
+                scheduleContainer.innerHTML += card;
+            });
+        }
+
+        function renderRecommendations() {
+            recommendationsData.forEach(rec => {
+                const card = `
+                    <div class="recommendation-card bg-stone-100 p-4 rounded-lg cursor-pointer hover:bg-teal-50 transition-colors duration-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-teal-600">${rec.title}</h3>
+                            <span class="text-2xl">${rec.icon}</span>
+                        </div>
+                        <p class="details text-stone-600 mt-2 text-sm hidden">${rec.content}</p>
+                    </div>
+                `;
+                recommendationsContainer.innerHTML += card;
+            });
+
+            document.querySelectorAll('.recommendation-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    card.querySelector('.details').classList.toggle('hidden');
+                });
+            });
+        }
+
+        function updateChart(day) {
+            const data = scheduleData[day].timeDistribution;
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+            
+            const totalHours = values.reduce((a, b) => a + b, 0);
+            if (day === 'finde' && totalHours !== 48) {
+                const remaining = 48 - totalHours;
+                if(remaining > 0) {
+                    labels.push('No Asignado');
+                    values.push(remaining);
+                }
+            } else if (day !== 'finde' && totalHours !== 24) {
+                 const remaining = 24 - totalHours;
+                 if(remaining > 0) {
+                    labels.push('No Asignado');
+                    values.push(remaining);
+                }
+            }
+
+
+            if (timeChart) {
+                timeChart.data.labels = labels;
+                timeChart.data.datasets[0].data = values;
+                timeChart.update();
+            } else {
+                const ctx = document.getElementById('time-chart').getContext('2d');
+                timeChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Horas',
+                            data: values,
+                            backgroundColor: [
+                                '#0f766e', // Sueño (teal-800)
+                                '#0d9488', // Clases (teal-600)
+                                '#f97316', // Desplazamiento (orange-500)
+                                '#2dd4bf', // Estudio (teal-400)
+                                '#a78bfa', // Ocio (violet-400)
+                                '#6ee7b7', // Ejercicio (emerald-300)
+                                '#fbbf24', // Comida (amber-400)
+                                '#9ca3af', // Organizacion/No Asignado (gray-400)
+                            ],
+                            borderColor: '#ffffff',
+                            borderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 15,
+                                    padding: 15,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed !== null) {
+                                            label += context.parsed + ' horas';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '60%'
+                    }
+                });
+            }
+        }
+
+        daySelector.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const day = e.target.dataset.day;
+                
+                document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+
+                renderSchedule(day);
+                updateChart(day);
+            }
+        });
+
+        window.onload = () => {
+            const initialDay = 'lunes';
+            document.querySelector(`.day-btn[data-day="${initialDay}"]`).classList.add('active');
+            renderSchedule(initialDay);
+            updateChart(initialDay);
+            renderRecommendations();
+        };
+    </script>
+</body>
+</html>
