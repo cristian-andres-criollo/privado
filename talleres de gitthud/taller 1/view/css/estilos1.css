@@ -1,0 +1,118 @@
+/* RESET GENERAL */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* CUERPO */
+body {
+    background-color: #f03030;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+/* CONTENEDOR PRINCIPAL */
+.informacion1 {
+    width: 60%;
+    margin: 5% auto;
+    background-color: #B0DFFF;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+/* HR ESTILIZADA */
+.informacion1 hr {
+    width: 80%;
+    height: 2.5px;
+    background-color: black;
+    border: none;
+    margin: 20px auto;
+}
+
+/* TÍTULOS */
+.informacion1 h2 {
+    text-transform: uppercase;
+    font-size: 40px;
+    font-style: oblique;
+}
+
+.informacion1 h3 {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+/* BOTÓN PRINCIPAL */
+.boton1 {
+    width: 200px;
+    padding: 10px;
+    background-color: rgb(87, 84, 84);
+    color: white;
+    border-radius: 50px;
+    border: none;
+    font-size: 16px;
+    transition: transform 0.3s;
+    cursor: pointer;
+}
+
+.boton1:hover {
+    transform: scale(1.1);
+}
+
+/* ESTILO DIFUMINADO CUANDO MODAL ESTÁ ACTIVO */
+body.modal-activo > *:not(.modal) {
+    filter: blur(5px);
+    pointer-events: none;
+}
+
+/* MODAL */
+.modal {
+    display: none; /* Oculto por defecto */
+    position: fixed;
+    z-index: 999;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+}
+
+/* CONTENIDO DEL MODAL */
+.modal-contenido {
+    background: linear-gradient(to right, #ffffff, #f1f1f1);
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+}
+
+/* INPUT DENTRO DEL MODAL */
+.modal-contenido input {
+    padding: 10px;
+    width: 80%;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    margin-bottom: 15px;
+}
+
+/* BOTONES DEL MODAL */
+.modal-contenido button {
+    padding: 10px 20px;
+    margin: 5px;
+    font-size: 16px;
+    border-radius: 25px;
+    border: none;
+    background-color: #2980b9;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.modal-contenido button:hover {
+    background-color: #1c5980;
+}

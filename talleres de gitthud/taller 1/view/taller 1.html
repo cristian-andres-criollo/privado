@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taller 1</title>
+    <link rel="stylesheet" href="./css/estilos1.css">
+    <link rel="icon" href="./img/logo.jpg">
+</head>
+<body>
+    <center>
+        <div class="informacion1">
+            <br><br><br>
+            <h2>Carrera de 100 metros planos</h2>
+            <h3>Bienvenido al programa para saber el premio del concursante</h3>
+            <hr>
+            <button type="button" id="boton1" class="boton1">Presióname para ejecutar el programa</button>
+            <br><br><br>
+        </div>
+    </center>
+
+    <!-- Modal oculto inicialmente -->
+    <div id="modalPremio" class="modal">
+        <div class="modal-contenido">
+            <h2>Ingrese el puesto del participante</h2>
+            <input type="number" id="inputPuesto" min="1" max="10" placeholder="Ej: 4">
+            <button onclick="mostrarPremio()">Mostrar Premio</button>
+            <p id="resultadoPremio"></p>
+            <br>
+            <button onclick="cerrarModal()">Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        // Mostrar modal y difuminar fondo
+        document.getElementById("boton1").addEventListener("click", function () {
+            document.getElementById("modalPremio").style.display = "flex";
+            document.body.classList.add("modal-activo");
+        });
+
+        // Cerrar modal y quitar desenfoque
+        function cerrarModal() {
+            document.getElementById("modalPremio").style.display = "none";
+            document.body.classList.remove("modal-activo");
+        }
+
+        // Mostrar premio según el puesto
+        function mostrarPremio() {
+            let puesto = parseInt(document.getElementById("inputPuesto").value);
+            let premio = "";
+
+            if (puesto === 1) {
+                premio = "es la suma de $1.000.000 pesos";
+            } else if (puesto === 2) {
+                premio = "es la suma de $500.000 pesos";
+            } else if (puesto === 3) {
+                premio = "es la suma de $250.000 pesos";
+            } else if (puesto === 4) {
+                premio = "es la suma de $100.000 pesos";
+            } else if (puesto === 5) {
+                premio = "es una medalla";
+            } else if (puesto >= 6 && puesto <= 10) {
+                premio = "es un dulce";
+            } else {
+                premio = "Puesto inválido. Debe estar entre el 1 y el 10";
+            }
+
+            document.getElementById("resultadoPremio").innerText = 
+                "El premio para el puesto " + puesto + " " + premio;
+        }
+    </script>
+</body>
+</html>
